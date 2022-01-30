@@ -1,10 +1,18 @@
 import asyncio
+import random
 from typing import List
 
+TIME_MODIFIER = 1.0
+
 FOO_MINING_REQUEST = "foo_mining_request"
+FOO_MINING_RESPONSE = "foo_mining_response"
 BAR_MINING_REQUEST = "bar_mining_request"
+BAR_MINING_RESPONSE = "bar_mining_response"
 FOO_BAR_PROCESS_REQUEST = "foo_bar_process_request"
+FOO_BAR_PROCESS_SUCCESS_RESPONSE = "foo_bar_process_success_response"
+FOO_BAR_PROCESS_FAILURE_RESPONSE = "foo_bar_process_failure_response"
 FOO_BAR_SELL_REQUEST = "foo_bar_sell_request"
+FOO_BAR_SELL_RESPONSE = "foo_bar_sell_response"
 BUY_ROBOT_REQUEST = "buy_robot_request"
 BUY_ROBOT_RESPONSE = "buy_robot_response"
 ROBOT_READY = "robot_ready"
@@ -65,11 +73,41 @@ class Robot:
     async def run(self) -> None:
         await self.manager.results.put(ROBOT_READY)
         while self._running:
-            await self.manager.requests.get()
-            await self.manager.results.put(BUY_ROBOT_RESPONSE)
+            request = await self.manager.requests.get()
+            response = await self.manage_request(request=request)
+            await self.manager.results.put(response)
 
     def stop(self) -> None:
         self._running = False
+
+    @staticmethod
+    async def sleep(delay: float) -> asyncio.Future:
+        return await asyncio.sleep(delay * TIME_MODIFIER)
+
+    async def manage_request(self, request: str) -> str:
+        task_duration = 0.0
+        if request == FOO_MINING_REQUEST:
+            task_duration += 1.0
+            response = FOO_MINING_RESPONSE
+        elif request == BAR_MINING_REQUEST:
+            task_duration += random.uniform(a=0.5, b=2.0)
+            response = BAR_MINING_RESPONSE
+        elif request == FOO_BAR_PROCESS_REQUEST:
+            task_duration += 2.0
+            success = random.random() > 0.4
+            if success:
+                response = FOO_BAR_PROCESS_SUCCESS_RESPONSE
+            else:
+                response = FOO_BAR_PROCESS_FAILURE_RESPONSE
+        elif request == FOO_BAR_SELL_REQUEST:
+            task_duration += 10.0
+            response = FOO_BAR_SELL_RESPONSE
+        elif request == BUY_ROBOT_REQUEST:
+            response = BUY_ROBOT_RESPONSE
+        else:
+            raise ValueError(f"Unknown request: {request}")
+        await self.sleep(delay=task_duration)
+        return response
 
 
 if __name__ == "__main__":
