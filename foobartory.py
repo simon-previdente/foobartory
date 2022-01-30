@@ -54,12 +54,39 @@ class Manager:
         else:
             return FOO_MINING_REQUEST
 
-    async def _run_until_the_goal_is_reached(self) -> None:
-        while len(self.robots) < 30:
-            await self.results.get()
+    def consume_resources(self, activity: str) -> None:
+        """Consume resources before the activity"""
+        if activity == BUY_ROBOT_REQUEST:
+            self.foo_cnt -= 6
+            self.money -= 3
+        elif activity == FOO_BAR_SELL_REQUEST:
+            self.foobar_cnt -= 5
+        elif activity == FOO_BAR_PROCESS_REQUEST:
+            self.foo_cnt -= 1
+            self.bar_cnt -= 1
+
+    def manage_result(self, result: str) -> None:
+        """Provides resources based on the activity's result"""
+        if result == FOO_MINING_RESPONSE:
+            self.foo_cnt += 1
+        elif result == BAR_MINING_RESPONSE:
+            self.bar_cnt += 1
+        elif result == FOO_BAR_PROCESS_SUCCESS_RESPONSE:
+            self.foobar_cnt += 1
+        elif result == FOO_BAR_PROCESS_FAILURE_RESPONSE:
+            self.bar_cnt += 1
+        elif result == FOO_BAR_SELL_RESPONSE:
+            self.money += 1
+        elif result == BUY_ROBOT_RESPONSE:
             self.add_robot()
 
+    async def _run_until_the_goal_is_reached(self) -> None:
+        while len(self.robots) < 30:
+            result = await self.results.get()
+            self.manage_result(result=result)
+
             activity_needed = self.determine_next_activity()
+            self.consume_resources(activity=activity_needed)
             await self.requests.put(activity_needed)
         for robot in self.robots:
             robot.stop()
