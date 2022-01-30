@@ -1,6 +1,6 @@
 import asyncio
 import random
-from typing import List
+from typing import List, Optional
 
 TIME_MODIFIER = 1.0
 
@@ -96,6 +96,7 @@ class Robot:
     def __init__(self, manager: Manager) -> None:
         self._running = True
         self.manager = manager
+        self.last_activity: Optional[str] = None
 
     async def run(self) -> None:
         await self.manager.results.put(ROBOT_READY)
@@ -113,6 +114,11 @@ class Robot:
 
     async def manage_request(self, request: str) -> str:
         task_duration = 0.0
+        # Activity change
+        if self.last_activity and self.last_activity != request:
+            task_duration += 5.0
+        self.last_activity = request
+        # Activity process
         if request == FOO_MINING_REQUEST:
             task_duration += 1.0
             response = FOO_MINING_RESPONSE

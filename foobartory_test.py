@@ -154,6 +154,15 @@ class TestRobot(unittest.TestCase):
         )
         assert response == BUY_ROBOT_RESPONSE
 
+    def test_movement_between_activities(self):
+        asyncio.get_event_loop().run_until_complete(
+            future=self.robot.manage_request(BAR_MINING_REQUEST)
+        )
+        asyncio.get_event_loop().run_until_complete(
+            future=self.robot.manage_request(FOO_MINING_REQUEST)
+        )
+        assert self.sleep_kwargs["delay"] == 5.0 + 1.0
+
 
 if __name__ == "__main__":
     unittest.main()
